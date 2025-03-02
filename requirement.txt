@@ -8,3 +8,4 @@ pandas
 pickle-mixin
 python-dotenv
 imbalanced-learn
+ffmpeg
