@@ -1,9 +1,13 @@
 import streamlit as st
 import pickle
 import numpy as np
-import librosa
 import tempfile
 import os
+from pydub import AudioSegment
+from scipy.io import wavfile
+from scipy.signal import find_peaks
+from imblearn.over_sampling import SMOTE
+from sklearn.preprocessing import LabelEncoder
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -11,18 +15,24 @@ MODEL_PATH = os.getenv("MODEL_PATH")
 ENCODER_PATH = os.getenv("ENCODER_PATH")
 
 def extract_features(file_path):
-    y, sr = librosa.load(file_path, sr=None)
-    mfccs = librosa.feature.mfcc(y=y, sr=sr, n_mfcc=13)
-    chroma = librosa.feature.chroma_stft(y=y, sr=sr, n_chroma=12)
-    zcr = librosa.feature.zero_crossing_rate(y)
-    spec_contrast = librosa.feature.spectral_contrast(y=y, sr=sr, n_bands=6, fmin=50)
-    
-    mfccs_mean = np.mean(mfccs.T, axis=0)
-    chroma_mean = np.mean(chroma.T, axis=0)
-    zcr_mean = np.mean(zcr.T, axis=0)
-    spec_contrast_mean = np.mean(spec_contrast.T, axis=0)
-    
-    return np.concatenate((mfccs_mean, chroma_mean, zcr_mean, spec_contrast_mean))
+    audio = AudioSegment.from_file(file_path)
+    audio = audio.set_channels(1).set_frame_rate(22050)  # Ensure mono & set sample rate
+    audio.export("temp.wav", format="wav")
+
+    sample_rate, samples = wavfile.read("temp.wav")
+
+    samples = samples.astype(np.float32)
+
+    mfcc_like = dct(samples, type=2, norm='ortho')[1:14]
+
+    fft_spectrum = np.abs(np.fft.fft(samples))[:len(samples) // 2]
+    chroma_like = np.mean(fft_spectrum.reshape(-1, 12), axis=0) 
+
+    zero_crossings = np.mean(np.abs(np.diff(np.sign(samples))))
+
+    spectral_contrast = np.std(fft_spectrum.reshape(-1, 6), axis=0)  
+
+    return np.concatenate((mfcc_like, chroma_like, [zero_crossings], spectral_contrast))
 
 clf = pickle.load(open(MODEL_PATH, 'rb'))
 label_encoder = pickle.load(open(ENCODER_PATH, 'rb'))
