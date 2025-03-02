@@ -1,9 +1,10 @@
 streamlit
 numpy
+pydub
+scipy
 soundfile
 scikit-learn
 pandas
 pickle-mixin
 python-dotenv
 imbalanced-learn
-librosa==0.10.0.post2
