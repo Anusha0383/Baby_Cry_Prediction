@@ -1,9 +1,9 @@
 streamlit
 numpy
-librosa==0.10.1
+soundfile
 scikit-learn
 pandas
 pickle-mixin
 python-dotenv
 imbalanced-learn
-soundfile
+librosa==0.10.0.post2
